@@ -1,0 +1,772 @@
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rishik Royal — AI Developer</title>
+    <meta name="description" content="Rishik Royal, AI Developer specializing in RAG-powered chatbots, computer vision on edge devices, and data-driven dashboards." />
+    <link rel="icon" type="image/png" href="assets/favicon.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              bg: '#0b1020',
+              panel: '#0f172a',
+              neon: '#00f0d1',
+              violet: '#8b5cf6',
+              accent: '#00bcd4'
+            },
+            fontFamily: {
+              sans: ['Inter', 'ui-sans-serif', 'system-ui']
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        background: radial-gradient(ellipse at 10% 10%, rgba(139,92,246,0.1), transparent 10%),
+                    radial-gradient(ellipse at 90% 90%, rgba(0,188,212,0.05), transparent 10%),
+                    #0b1020;
+        overflow-x: hidden;
+      }
+      .glow { box-shadow: 0 4px 20px rgba(0,240,209,0.1), inset 0 1px 0 rgba(255,255,255,0.05); }
+      .glass { background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); backdrop-filter: blur(8px); }
+      .neon-text { text-shadow: 0 2px 12px rgba(0,240,209,0.06); }
+      .blob { position: fixed; filter: blur(36px); opacity: 0.32; transform: translate3d(0,0,0); z-index:0; pointer-events:none; }
+      @keyframes floatyA { 0% { transform: translateY(0) scale(1)} 50% { transform: translateY(-18px) scale(1.06)} 100% { transform: translateY(0) scale(1)} }
+      @keyframes floatyB { 0% { transform: translateY(0) scale(1)} 50% { transform: translateY(22px) scale(0.98)} 100% { transform: translateY(0) scale(1)} }
+      .blob.a { animation: floatyA 6s ease-in-out infinite; }
+      .blob.b { animation: floatyB 8s ease-in-out infinite; }
+      .reveal { opacity: 0; transform: translateY(20px); transition: all 800ms cubic-bezier(0.2, 0.9, 0.2, 1); }
+      .reveal.visible { opacity: 1; transform: translateY(0); }
+      :focus { outline: 2px dashed rgba(0,240,209,0.12); outline-offset: 3px; }
+      .card-hover {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+      .card-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 30px rgba(139,92,246,0.15), 0 4px 15px rgba(0,188,212,0.1);
+      }
+      .btn-neon {
+        transition: all 0.3s ease;
+      }
+      .btn-neon:hover {
+        box-shadow: 0 0 10px #00f0d1, 0 0 20px #8b5cf6;
+        transform: scale(1.03);
+      }
+      a[data-link]:hover::after {
+        content: '';
+        display: block;
+        height: 2px;
+        width: 100%;
+        background: #00f0d1;
+        animation: slideIn 0.3s forwards;
+      }
+      @keyframes slideIn { 0% { width: 0; } 100% { width: 100%; } }
+      #typewriter::after {
+        content: '|';
+        animation: blink 1s infinite;
+      }
+      @keyframes blink { 0%,50%,100% { opacity:1; } 25%,75% { opacity:0; } }
+      @keyframes glow {
+        0%, 100% { text-shadow: 0 0 5px rgba(0,240,209,0.5); }
+        50% { text-shadow: 0 0 10px rgba(0,240,209,0.8); }
+      }
+      .animate-glow-text { animation: glow 2s ease-in-out infinite; }
+      #particle-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+      .text-neon-glow {
+        color: #184ad4;
+        text-shadow: 0 0 5px #184ad4, 0 0 10px #184ad4, 0 0 20px #184ad4, 0 0 40px #184ad4;
+        transition: all 0.3s ease-in-out;
+      }
+      .text-neon-glow:hover {
+        text-shadow: 0 0 10px #184ad4, 0 0 20px #184ad4, 0 0 30px #184ad4, 0 0 60px #184ad4;
+      }
+      @keyframes pulse-blue {
+        0%, 100% { box-shadow: 0 0 10px rgba(0,150,255,0.6); transform: scale(1); opacity: 1; }
+        50% { box-shadow: 0 0 20px rgba(0,150,255,0.9); transform: scale(1.05); opacity: 0.9; }
+      }
+      .animate-pulse-blue { animation: pulse-blue 3s ease-in-out infinite; }
+      @keyframes fadein {
+        from { opacity: 0; transform: translateY(20px) scale(0.95); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      .animate-fadein { animation: fadein 0.4s ease forwards; }
+      @keyframes bounceInOffset {
+        0% { transform: translate(0,0) scale(0.5) rotate(0deg); opacity: 0; }
+        50% { transform: translate(var(--offset-x), var(--offset-y)) scale(1.2) rotate(10deg); opacity: 1; }
+        70% { transform: translate(var(--offset-x), var(--offset-y)) scale(0.95) rotate(-5deg); }
+        100% { transform: translate(var(--offset-x), var(--offset-y)) scale(1) rotate(0deg); opacity: 1; }
+      }
+      .animate-bounce-in { animation: bounceInOffset 0.5s forwards; }
+    </style>
+  </head>
+  <body class="antialiased text-gray-200 font-sans">
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- FLOATING BLOBS -->
+    <svg class="blob a" width="420" height="420" style="left:-120px; top:-80px;">
+      <defs>
+        <linearGradient id="g1" x1="0" x2="1">
+          <stop offset="0%" stop-color="#8b5cf6" />
+          <stop offset="100%" stop-color="#00bcd4" />
+        </linearGradient>
+      </defs>
+      <circle cx="210" cy="210" r="160" fill="url(#g1)" />
+    </svg>
+    <svg class="blob b" width="340" height="340" style="right:-80px; bottom:-100px;">
+      <defs>
+        <linearGradient id="g2" x1="0" x2="1">
+          <stop offset="0%" stop-color="#00f0d1" />
+          <stop offset="100%" stop-color="#8b5cf6" />
+        </linearGradient>
+      </defs>
+      <circle cx="170" cy="170" r="140" fill="url(#g2)" />
+    </svg>
+
+    <!-- HEADER -->
+    <header class="sticky top-4 z-50 max-w-7xl mx-auto px-6 flex items-center justify-between">
+      <a href="#home" class="z-50 flex items-center gap-3 px-4 py-3 rounded-xl glass ring-1 ring-white/10 hover:ring-white/20 transition">
+        <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br from-violet to-accent text-black font-bold">RR</div>
+        <div class="leading-tight">
+          <div class="text-base font-semibold">Rishik Royal</div>
+          <div class="text-sm text-gray-400">AI Developer</div>
+        </div>
+      </a>
+      <nav class="z-50 hidden md:flex items-center gap-8 text-base font-medium">
+        <a data-link href="#home" class="px-4 py-2 rounded-md hover:scale-105 transition">Home</a>
+        <a data-link href="#about" class="px-4 py-2 rounded-md hover:scale-105 transition">About</a>
+        <a data-link href="#experience" class="px-4 py-2 rounded-md hover:scale-105 transition">Experience</a>
+        <a data-link href="#projects" class="px-4 py-2 rounded-md hover:scale-105 transition">Projects</a>
+        <a data-link href="#achievements" class="px-4 py-2 rounded-md hover:scale-105 transition">Achievements</a>
+        <a data-link href="#certs" class="px-4 py-2 rounded-md hover:scale-105 transition">Certificates</a>
+        <a data-link href="#contact" class="px-4 py-2 rounded-md hover:scale-105 transition">Contact</a>
+      </nav>
+      <div class="z-50 md:hidden">
+        <button id="burger" class="p-3 rounded-md glass ring-1 ring-white/10">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main id="app" class="relative z-10 max-w-7xl mx-auto px-6 pt-12 pb-24">
+      <!-- HERO (UNCHANGED) -->
+      <section id="home" class="min-h-[68vh] grid lg:grid-cols-2 gap-8 items-center pt-6">
+        <div class="z-20">
+          <p class="text-sm text-accent/80 font-medium mb-3 neon-text">Building AI that actually ships</p>
+          <h1 class="text-4xl md:text-5xl font-extrabold leading-tight">Hey — I'm <span class="text-neon">Rishik Royal</span></h1>
+          <p class="mt-4 text-gray-300 max-w-prose">AI Developer. I build RAG chatbots, realtime computer vision on edge devices, and data products that turn noise into decisions. I like clean code, messy problems,</p>
+          <span class="text-neon font-semibold text-neon-glow">
+            “Curious to know more about me? Just click on the Ghost Robot wandering around… yes, that’s Bujji.”
+          </span>
+          <div class="mt-6 flex gap-3 items-center">
+            <a href="#projects" data-link class="px-5 py-3 rounded-md bg-gradient-to-r from-neon to-violet text-black font-semibold shadow-md btn-neon">See projects</a>
+            <a href="https://github.com/rishikroyal" target="_blank" class="px-3 py-2 rounded-md glass text-sm btn-neon">GitHub</a>
+          </div>
+          <div class="mt-8 p-4 rounded-xl glass ring-1 ring-white/6 w-80 h-20 max-w-md flex flex-col justify-between">
+            <div class="text-xs text-gray-400">prompt</div>
+            <div class="mt-2 bg-transparent text-sm flex items-center gap-3 overflow-hidden">
+              <div class="w-2 h-2 rounded-full bg-neon animate-pulse"></div>
+              <div id="typewriter" class="text-gray-200 truncate"></div>
+            </div>
+          </div>
+          <div class="mt-6 flex gap-4">
+            <div class="p-3 rounded-lg glass text-sm">
+              <div class="text-xs text-gray-400">Location</div>
+              <div class="font-medium">Bengaluru, India</div>
+            </div>
+            <div class="p-3 rounded-lg glass text-sm">
+              <div class="text-xs text-gray-400">Email</div>
+              <div class="font-medium">royalrishik5003@gmail.com</div>
+            </div>
+          </div>
+        </div>
+        <div class="z-20 flex items-center justify-center">
+          <div class="w-full max-w-lg">
+            <div class="relative rounded-2xl overflow-hidden glow border border-white/6">
+              <div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/2 to-transparent mix-blend-overlay" style="pointer-events:none"></div>
+              <img src="/assets/AImokeup.png" alt="ai mockup" class="w-full h-70 object-cover"/>
+              <div class="p-3 bg-black/60 backdrop-blur-lg rounded-lg flex items-center justify-center min-h-[150px]">
+                <div class="flex flex-wrap gap-2 justify-center">
+                  <span class="px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-blue-900/20 backdrop-blur-md shadow-[0_0_10px_rgba(0,150,255,0.6)] hover:shadow-[0_0_20px_rgba(0,150,255,0.9)] transition-transform duration-300 hover:scale-110 tracking-wider uppercase animate-pulse-blue">Python</span>
+                  <span class="px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-blue-900/20 backdrop-blur-md shadow-[0_0_10px_rgba(0,150,255,0.6)] hover:shadow-[0_0_20px_rgba(0,150,255,0.9)] transition-transform duration-300 hover:scale-110 tracking-wider uppercase animate-pulse-blue">LangChain</span>
+                  <span class="px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-blue-900/20 backdrop-blur-md shadow-[0_0_10px_rgba(0,150,255,0.6)] hover:shadow-[0_0_20px_rgba(0,150,255,0.9)] transition-transform duration-300 hover:scale-110 tracking-wider uppercase animate-pulse-blue">OpenCV</span>
+                  <span class="px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-blue-900/20 backdrop-blur-md shadow-[0_0_10px_rgba(0,150,255,0.6)] hover:shadow-[0_0_20px_rgba(0,150,255,0.9)] transition-transform duration-300 hover:scale-110 tracking-wider uppercase animate-pulse-blue">Hugging Face</span>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4 grid grid-cols-3 gap-3">
+              <div class="p-3 rounded-lg glass text-sm">
+                <div class="text-xs text-gray-400">Role</div>
+                <div class="font-medium">AI Developer Intern</div>
+              </div>
+              <div class="p-3 rounded-lg glass text-sm">
+                <div class="text-xs text-gray-400">Open for</div>
+                <div class="font-medium">Entry-level/Junior roles</div>
+              </div>
+              <div class="p-3 rounded-lg glass text-sm">
+                <div class="text-xs text-gray-400">catogeries</div>
+                <div class="font-medium">AI/ Data Analyst/Data Science</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ABOUT -->
+      <section id="about" class="mt-24 py-12 px-6 md:px-12 rounded-3xl bg-gradient-to-br from-panel/90 via-[#1a1d3e]/80 to-[#2a2c5e]/70 backdrop-blur-2xl ring-1 ring-white/20 shadow-xl reveal">
+        <div class="flex flex-col md:flex-row items-center md:items-start justify-between gap-12">
+          <div class="flex-1 max-w-2xl">
+            <div class="relative inline-block mb-10">
+              <h2 class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-neon via-violet to-accent animate-glow-text">About Me</h2>
+              <div class="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-neon via-violet to-accent animate-glow"></div>
+            </div>
+            <ul class="list-none text-gray-200 text-lg leading-relaxed space-y-4">
+              <li class="flex items-start gap-3">
+                <span class="text-violet">➔</span>
+                <span>Developing <b class="text-white font-semibold">RAG-powered chatbots</b>, intelligent automation workflows, and <b class="text-white font-semibold">data-driven dashboards</b> to optimize business decision-making.</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-violet">➔</span>
+                <span>Proficient in <b class="text-white font-semibold">Python, LangChain, Flask, REST APIs</b>, and <b class="text-white font-semibold">Meta Graph API</b>, with hands-on project experience.</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-violet">➔</span>
+                <span>Skilled in <b class="text-white font-semibold">machine learning, data visualization</b>, and <b class="text-white font-semibold">prompt engineering</b> to deliver impactful AI solutions.</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-violet">➔</span>
+                <span>Passionate about building <b class="text-white font-semibold">scalable, robust AI systems</b> that balance innovation with practical usability.</span>
+              </li>
+            </ul>
+            <div class="mt-10 grid sm:grid-cols-2 gap-6">
+              <div class="p-6 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-300 backdrop-blur-lg ring-1 ring-white/20 shadow-md card-hover">
+                <h4 class="text-sm text-gray-100 font-bold uppercase tracking-widest">Education</h4>
+                <ul class="mt-3 text-gray-300 text-base space-y-2">
+                  <li><b>B.Tech in Computer Science (AI)</b></li>
+                  <li>Parul University — <span class="text-gray-400">2022–2025</span></li>
+                  <li><span class="text-gray-400">GPA:</span> 7.06</li>
+                </ul>
+              </div>
+              <div class="p-6 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-300 backdrop-blur-lg ring-1 ring-white/20 shadow-md card-hover">
+                <h4 class="text-sm text-gray-100 font-bold uppercase tracking-widest">Soft Skills</h4>
+                <ul class="mt-3 text-gray-300 text-base space-y-2 list-none">
+                  <li class="flex items-center gap-2"><span class="text-violet">•</span> Analytical Thinking</li>
+                  <li class="flex items-center gap-2"><span class="text-violet">•</span> Collaboration</li>
+                  <li class="flex items-center gap-2"><span class="text-violet">•</span> Time Management</li>
+                  <li class="flex items-center gap-2"><span class="text-violet">•</span> Communication</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="relative group w-64 md:w-80 shrink-0 mt-10 md:mt-0">
+            <div class="absolute -inset-2 bg-gradient-to-r from-neon via-violet to-accent rounded-3xl blur-lg opacity-60 group-hover:opacity-90 transition duration-500"></div>
+            <img src="/assets/51379.JPG" alt="Profile Picture" class="relative rounded-3xl shadow-2xl ring-1 ring-white/30 transform group-hover:scale-105 transition duration-500 ease-out" />
+            <div class="absolute bottom-3 left-3 bg-gradient-to-r from-violet to-accent px-4 py-1.5 rounded-full text-sm text-white font-semibold backdrop-blur-md shadow-md">AI Developer</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- EXPERIENCE -->
+  <section id="experience" class="mt-16 reveal px-4 md:px-8 lg:px-16">
+    <h2 class="text-3xl font-semibold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-neon to-violet animate-glow-text">Professional Experience</h2>
+    <div class="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+      <div class="p-6 rounded-xl glass card-hover ring-1 ring-white/10 shadow-lg">
+        <h4 class="text-base font-semibold mb-2">AI Developer Intern</h4>
+        <p class="text-sm text-gray-400 mb-4">August 2025 – Present</p>
+        <ul class="mt-2 text-gray-300 text-base list-disc list-inside space-y-2">
+          <li>Developed Retrieval-Augmented Generation (RAG) chatbot pipelines using LangChain and OpenAI APIs for efficient and scalable query handling.</li>
+          <li>Built and integrated APIs for WhatsApp, SMS, and webhooks using Flask and FastAPI to enable seamless messaging workflows.</li>
+        </ul>
+        
+      </div>
+
+    </div>
+  </section>
+
+  <!-- PROJECTS -->
+  <section id="projects" class="mt-16 reveal">
+    <h2 class="text-3xl font-semibold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-neon to-violet animate-glow-text">Projects</h2>
+    <div class="grid sm:grid-cols-1 md:grid-cols-2 gap-6">
+
+      <div class="p-6 rounded-xl glass card-hover ring-1 ring-white/10 shadow-lg">
+        <h4 class="text-base font-semibold">RAG Chatbot</h4>
+        <p class="text-sm text-gray-400">LangChain, OpenAI, Pinecone</p>
+        <p class="mt-2 text-gray-300 text-base">Built a Retrieval-Augmented Generation chatbot for efficient query handling and contextual responses.</p>
+        <p class="mt-2">
+          <a href="#" target="_blank" class="text-blue-400 underline font-medium">View Code</a>
+        </p>
+      </div>
+
+      <div class="p-6 rounded-xl glass card-hover ring-1 ring-white/10 shadow-lg">
+        <h4 class="text-base font-semibold">Edge CV Application</h4>
+        <p class="text-sm text-gray-400">NVIDIA Jetson Nano, YOLOv8</p>
+        <p class="mt-2 text-gray-300 text-base">Developed a real-time computer vision app for object detection on edge devices.</p>
+        <p class="mt-2">
+          <a href="https://github.com/rishikroyal/PlateDetection" target="_blank" class="text-blue-400 underline font-medium">View Code</a>
+        </p>
+      </div>
+
+      <div class="p-6 rounded-xl glass card-hover ring-1 ring-white/10 shadow-lg">
+        <h4 class="text-base font-semibold">Data Dashboards</h4>
+        <p class="text-sm text-gray-400">PowerBI, Python</p>
+        <p class="mt-2 text-gray-300 text-base">Created interactive dashboards to visualize complex datasets for business insights.</p>
+        <p class="mt-2">
+          <a href="https://github.com/rishikroyal/dataScience" target="_blank" class="text-blue-400 underline font-medium">View Code</a>
+        </p>
+      </div>
+
+      <div class="p-6 rounded-xl glass card-hover ring-1 ring-white/10 shadow-lg">
+        <h4 class="text-base font-semibold">Speech-to-Text Pipeline</h4>
+        <p class="text-sm text-gray-400">Hugging Face Transformers, Python, Audio Preprocessing</p>
+        <p class="mt-2 text-gray-300 text-base">Built a speech-to-text pipeline using pre-trained Hugging Face models to transcribe audio files into text. Gained hands-on experience in audio preprocessing, model inference, and optimizing NLP workflows for real-world applications.</p>
+        <p class="mt-2">
+          <a href="https://github.com/rishikroyal/SpeechToText" target="_blank" class="text-blue-400 underline font-medium">View Code</a>
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ACHIEVEMENTS -->
+  <section id="achievements" class="mt-16 reveal px-4 md:px-8 lg:px-16">
+    <h2 class="text-3xl font-semibold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-neon to-violet animate-glow-text">Achievements</h2>
+    <div class="grid sm:grid-cols-1 md:grid-cols-2 gap-8">
+      
+      <!-- Deloitte Achievement -->
+      <div class="p-6 rounded-xl glass card-hover ring-1 ring-white/10 shadow-lg">
+        <h4 class="text-base font-semibold mb-2">Deloitte Australia Data Analytics Job Simulation on Forage - July 2025</h4>
+        <p class="text-sm text-gray-400 mb-4">2025</p>
+        <ul class="mt-2 text-gray-300 text-base list-disc list-inside space-y-1">
+          <li>Completed a Deloitte job simulation involving data analysis and forensic technology</li>
+          <li>Created a data dashboard using Tableau</li>
+          <li>Used Excel to classify data and draw business conclusions</li>
+        </ul>
+        <p class="mt-4">
+          <a href="https://forage-uploads-prod.s3.amazonaws.com/completion-certificates/9PBTqmSxAf6zZTseP/io9DzWKe3PTsiS6GG_9PBTqmSxAf6zZTseP_GF5jizAm6zGFyJp8T_1752066056791_completion_certificate.pdf" target="_blank" class="text-blue-400 underline font-medium">View Certificate / Report</a>
+        </p>
+      </div>
+      
+      <!-- TCS iON NQT Achievement -->
+      <div class="p-6 rounded-xl glass card-hover ring-1 ring-white/10 shadow-lg">
+        <h4 class="text-base font-semibold mb-2">TCS iON NQT</h4>
+        <p class="text-sm text-gray-400 mb-4">2024</p>
+        <ul class="mt-2 text-gray-300 text-base list-disc list-inside space-y-1">
+          <li>Demonstrated strong technical and analytical capabilities in the TCS iON National Qualifier Test (NQT)</li>
+          <li>Programming skills: Achieved a score of 1905.04 (69.95%), demonstrating a solid grasp of programming</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+
+
+      <!-- CERTIFICATES -->
+      <section id="certs" class="mt-16 reveal">
+        <h2 class="text-3xl font-semibold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-neon to-violet animate-glow-text">Certifications</h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="p-6 rounded-xl glass card-hover ring-1 ring-white/10">
+      <h4 class="text-base font-semibold">Python for Data Analysis</h4>
+      <p class="text-sm text-gray-400">Great Learning</p>
+      <p class="mt-2 text-gray-300 text-base">
+        <a href="https://www.mygreatlearning.com/certificate/FIWGZDEY" target="_blank" class="text-blue-400 underline">View Certificate</a>
+      </p>
+    </div>
+
+    <div class="p-6 rounded-xl glass card-hover ring-1 ring-white/10">
+      <h4 class="text-base font-semibold">Google Data Analytics Capstone: Complete a Case Study</h4>
+      <p class="text-sm text-gray-400">Coursera</p>
+      <p class="mt-2 text-gray-300 text-base">
+        <a href="https://www.coursera.org/account/accomplishments/verify/WLIXSMSBMIUD" target="_blank" class="text-blue-400 underline">View Certificate</a>
+      </p>
+    </div>
+
+    <div class="p-6 rounded-xl glass card-hover ring-1 ring-white/10">
+      <h4 class="text-base font-semibold">Machine Learning - Fundamentals of Python Machine Learning</h4>
+      <p class="text-sm text-gray-400">Udemy</p>
+      <p class="mt-2 text-gray-300 text-base">
+        <a href="https://www.udemy.com/certificate/UC-67f73ca6-8c37-4d5d-8ebd-df2c70f8e49f/" target="_blank" class="text-blue-400 underline">View Certificate</a>
+      </p>
+    </div>
+
+    <div class="p-6 rounded-xl glass card-hover ring-1 ring-white/10">
+      <h4 class="text-base font-semibold">MySQL (Advanced)</h4>
+      <p class="text-sm text-gray-400">HackerRank</p>
+      <p class="mt-2 text-gray-300 text-base">
+        <a href="https://www.hackerrank.com/certificates/iframe/4fad85446653" target="_blank" class="text-blue-400 underline">View Certificate</a>
+      </p>
+    </div>
+
+    <div class="p-6 rounded-xl glass card-hover ring-1 ring-white/10">
+      <h4 class="text-base font-semibold">Advanced Excel</h4>
+      <p class="text-sm text-gray-400">IT Vedant</p>
+      <p class="mt-2 text-gray-300 text-base">
+        <a href="https://drive.google.com/file/d/18yLpWgqDGnlQ45ExMhnO00IHK2M4jon2/view" target="_blank" class="text-blue-400 underline">View Certificate</a>
+      </p>
+    </div>
+
+    <div class="p-6 rounded-xl glass card-hover ring-1 ring-white/10">
+      <h4 class="text-base font-semibold">PowerBI</h4>
+      <p class="text-sm text-gray-400">OfficeMaster</p>
+      <p class="mt-2 text-gray-300 text-base">
+        <a href="https://certx.in/certificate/36a28147-6eed-47a5-8342-e5f926ebba61340326" target="_blank" class="text-blue-400 underline">View Certificate</a>
+      </p>
+    </div>
+  </div>
+
+      </section>
+
+      <!-- CONTACT -->
+         <section >
+        <div data-tf-live="01KAG9567T6QN41PQNAVMET8ZM"></div><script src="//embed.typeform.com/next/embed.js"></script>
+
+  </section>
+
+
+
+      <footer class="mt-16 text-center text-base text-gray-400">© <span id="year"></span> Rishik Royal. All rights reserved.</footer>
+    </main>
+
+    <!-- CHATBOT (UNCHANGED) -->
+    <button id="chatbot-toggler" class="fixed w-24 h-24 flex items-center justify-center z-50 hover:scale-110 transition-all overflow-hidden" style="background:none; border:none; padding:0; outline:none;">
+      <img src="/assets/robot.png" alt="Robot" class="w-full h-full object-contain">
+    </button>
+    <div id="chatbot-popup" class="hidden fixed bottom-24 right-6 w-96 bg-[#0f1724] border border-white/10 rounded-2xl shadow-xl text-base text-gray-200 p-4 flex flex-col backdrop-blur-xl z-50">
+      <div class="flex justify-between items-center mb-3">
+        <span class="font-semibold text-2xl text-neon">Bujji</span>
+        <button id="close-chatbot" class="text-gray-400 hover:text-neon text-2xl">✕</button>
+      </div>
+      <div id="chatbot-messages" class="flex flex-col gap-3 mb-3 h-80 overflow-y-auto">
+        <div class="bg-white/5 p-3 rounded-md text-base">👋 Hey! I'm Bujji the chatbot(as bot is hosted in free source it might take Time to respond initially)</div>
+      </div>
+<div class="flex items-center gap-3 w-full">
+  <input id="chatbot-input" type="text" placeholder="Type a message..."
+    class="flex-1 min-w-0 p-3 rounded-2xl bg-white/10 text-gray-200 placeholder-gray-400 text-base focus:outline-none focus:ring-2 focus:ring-neon">
+
+  <button id="send-chatbot"
+    class="flex-none px-4 py-3 bg-gradient-to-r from-neon to-violet text-black rounded-2xl font-bold text-sm hover:scale-105 transition-all">
+    Send
+  </button>
+</div>
+
+
+
+    <!-- JAVASCRIPT -->
+<script>
+(() => {
+  /* -----------------------------
+     Helper: safe query
+     ----------------------------- */
+  const $ = (sel) => document.querySelector(sel);
+
+  /* -----------------------------
+     Smooth scroll for [data-link]
+     ----------------------------- */
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-link]');
+    if (!a) return;
+    e.preventDefault();
+    const href = a.getAttribute('href') || '';
+    const id = href.replace('#','');
+    const el = document.getElementById(id);
+    if (el) window.scrollTo({ top: el.offsetTop - 20, behavior: 'smooth' });
+    if (window.innerWidth < 768) {
+      const nav = $('header nav');
+      if (nav) nav.classList.add('hidden');
+    }
+  });
+
+  /* -----------------------------
+     Burger menu
+     ----------------------------- */
+  const burger = $('#burger');
+  if (burger) burger.addEventListener('click', () => {
+    const nav = $('header nav');
+    if (nav) nav.classList.toggle('hidden');
+  });
+
+  /* -----------------------------
+     Reveal on scroll
+     ----------------------------- */
+  const revealEls = Array.from(document.querySelectorAll('.reveal'));
+  const runReveal = () => {
+    revealEls.forEach(el => {
+      if (el.getBoundingClientRect().top < window.innerHeight - 80) el.classList.add('visible');
+    });
+  };
+  window.addEventListener('scroll', runReveal, { passive: true });
+  runReveal();
+
+  /* -----------------------------
+     Contact form handler (if present)
+     ----------------------------- */
+  const form = document.getElementById('contactForm');
+  const formMsg = document.getElementById('formMsg');
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      const name = (data.get('name') || '').toString().trim();
+      const email = (data.get('email') || '').toString().trim();
+      const msg = (data.get('message') || '').toString().trim();
+      if (!name || !email || !msg) {
+        if (formMsg) formMsg.textContent = 'Please fill all fields.';
+        return;
+      }
+      if (formMsg) formMsg.textContent = 'Sending...';
+      setTimeout(() => {
+        if (formMsg) formMsg.textContent = `Thank you, ${name.split(' ')[0]}! Your message has been received.`;
+        form.reset();
+      }, 900);
+    });
+  }
+
+  /* -----------------------------
+     Footer year
+     ----------------------------- */
+  const yearEl = document.getElementById('year');
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  /* -----------------------------
+     Typewriter
+     ----------------------------- */
+  (function typewriterInit(){
+    const txts = [
+      "build('rishik.royal').with({ role: 'AI Developer', focus: ['RAG','CV','NLP'] })",
+      "deploy('edge_ai').with({ device: 'Jetson Nano', model: 'YOLOv8' })",
+      "analyze('data_dashboards').with({ tool: 'PowerBI', style: 'neon' })"
+    ];
+    let i = 0, j = 0;
+    const typeEl = document.getElementById('typewriter');
+    if (!typeEl) return;
+    function typeWriter(){
+      if (i >= txts.length) i = 0;
+      typeEl.textContent = txts[i].substring(0, j++);
+      if (j > txts[i].length) { j = 0; i++; setTimeout(typeWriter, 1200); return; }
+      setTimeout(typeWriter, 40);
+    }
+    typeWriter();
+  })();
+
+  /* -----------------------------
+     Floating blobs follow mouse
+     ----------------------------- */
+  document.addEventListener('mousemove', (e) => {
+    const w = window.innerWidth, h = window.innerHeight;
+    document.querySelectorAll('.blob').forEach(blob => {
+      const offsetX = (e.clientX - w / 2) / 50;
+      const offsetY = (e.clientY - h / 2) / 50;
+      blob.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0)`;
+    });
+  });
+
+  /* -----------------------------
+     Particles background on canvas
+     ----------------------------- */
+  (function particlesInit(){
+    const canvas = document.getElementById('particle-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let w = canvas.width = window.innerWidth;
+    let h = canvas.height = window.innerHeight;
+    let particles = [];
+
+    function resetParticles() {
+      particles = [];
+      for (let i = 0; i < 80; i++) {
+        particles.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: Math.random() * 1.5 + 1,
+          dx: (Math.random() - 0.5) * 0.5,
+          dy: (Math.random() - 0.5) * 0.5
+        });
+      }
+    }
+
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+      resetParticles();
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function animate() {
+      ctx.clearRect(0, 0, w, h);
+      particles.forEach(p => {
+        p.x += p.dx; p.y += p.dy;
+        if (p.x < 0 || p.x > w) p.dx *= -1;
+        if (p.y < 0 || p.y > h) p.dy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,240,209,0.15)';
+        ctx.fill();
+      });
+      requestAnimationFrame(animate);
+    }
+    animate();
+  })();
+
+  /* -----------------------------
+     Chatbot roaming + popup + messaging
+     Fully scoped – bounce removed.
+     ----------------------------- */
+  (function chatbotInit(){
+    const btn = document.getElementById('chatbot-toggler');
+    const popup = document.getElementById('chatbot-popup');
+    const closeBtn = document.getElementById('close-chatbot');
+    const sendBtn = document.getElementById('send-chatbot');
+    const input = document.getElementById('chatbot-input');
+    const messages = document.getElementById('chatbot-messages');
+
+    if (!btn || !popup || !closeBtn || !sendBtn || !input || !messages) {
+      console.warn('Chatbot elements missing — chatbot disabled.');
+      return;
+    }
+
+    // roaming state
+    let x = window.innerWidth - 100;
+    let y = window.innerHeight - 100;
+    let dx = (Math.random() - 0.5) * 1.5;
+    let dy = (Math.random() - 0.5) * 1.5;
+    let facingRight = true;
+    let step = 0;
+    let roamHandle = null;
+    let isAnimating = false;
+
+    function startRoaming() {
+      if (roamHandle) return;
+      roamHandle = requestAnimationFrame(roam);
+    }
+    function stopRoaming() {
+      if (!roamHandle) return;
+      cancelAnimationFrame(roamHandle);
+      roamHandle = null;
+    }
+    function randomOffset() {
+      return { x: (Math.random() - 0.5) * 30, y: (Math.random() - 0.5) * 18 };
+    }
+
+    function roam() {
+      if (!isAnimating) {
+        const maxX = window.innerWidth - 80;
+        const maxY = window.innerHeight - 80;
+        x += dx; y += dy;
+        if (x <= 20 || x >= maxX) { dx *= -1; facingRight = !facingRight; }
+        if (y <= 20 || y >= maxY) dy *= -1;
+        step += 0.1;
+        const bounce = Math.sin(step) * 4;
+        const tilt = Math.sin(step) * 5 * (dx > 0 ? 1 : -1);
+        // tilt kept for subtle motion; transform still applies
+        btn.style.left = `${x}px`;
+        btn.style.top = `${y + bounce}px`;
+        btn.style.transform = `scaleX(${facingRight ? 1 : -1}) rotate(${tilt}deg)`;
+      }
+      roamHandle = requestAnimationFrame(roam);
+    }
+
+    // show/hide WITHOUT bounce/zoomin
+    function showPopup() {
+      if (!popup.classList.contains('hidden')) return;
+      stopRoaming();
+      popup.classList.remove('hidden');
+      // no bounce, no animation
+      isAnimating = false;
+      startRoaming();
+    }
+    function hidePopup() {
+      if (popup.classList.contains('hidden')) return;
+      popup.classList.add('hidden');
+      // no bounce, no animation
+      isAnimating = false;
+      startRoaming();
+    }
+
+    // toggle by clicking robot
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      if (popup.classList.contains('hidden')) showPopup();
+      else hidePopup();
+    });
+
+    // close button
+    closeBtn.addEventListener('click', (ev) => { ev.stopPropagation(); hidePopup(); });
+
+    // clicking outside should close
+    document.addEventListener('mousedown', (e) => {
+      if (popup.classList.contains('hidden')) return;
+      if (btn.contains(e.target) || popup.contains(e.target)) return;
+      hidePopup();
+    });
+
+    // ESC closes popup
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') hidePopup();
+    }, { passive: true });
+
+    // message sending
+    async function sendMessage() {
+      const question = input.value.trim();
+      if (!question) return;
+      const userMsg = document.createElement('div');
+      userMsg.className = "bg-white/10 p-2 rounded-md text-right";
+      userMsg.textContent = question;
+      messages.appendChild(userMsg);
+      messages.scrollTop = messages.scrollHeight;
+      input.value = "";
+
+      try {
+        const response = await fetch('https://chatbot-production-e54b.up.railway.app/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question, session_id: 'user1' })
+        });
+        const data = await response.json();
+        const bot = document.createElement('div');
+        bot.className = "bg-white/5 p-2 rounded-md";
+        bot.textContent = data?.answer ?? 'Oops, no response';
+        messages.appendChild(bot);
+        messages.scrollTop = messages.scrollHeight;
+      } catch (err) {
+        console.error('Chat send error:', err);
+        const errorMsg = document.createElement('div');
+        errorMsg.className = "bg-red-600/20 p-2 rounded-md text-red-300";
+        errorMsg.textContent = "Error connecting to server.";
+        messages.appendChild(errorMsg);
+        messages.scrollTop = messages.scrollHeight;
+      }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+
+    // place & start roaming on load
+    window.addEventListener('load', () => {
+      btn.style.position = 'fixed';
+      btn.style.left = `${x}px`;
+      btn.style.top = `${y}px`;
+      btn.style.transform = 'scaleX(1)';
+      startRoaming();
+    });
+    window.addEventListener('resize', () => {
+      x = Math.min(x, window.innerWidth - 100);
+      y = Math.min(y, window.innerHeight - 100);
+    });
+  })(); // chatbotInit end
+
+})(); // global IIFE end
+</script>
+
+
+  </body>
+  </html>
