@@ -102,6 +102,33 @@
         100% { transform: translate(var(--offset-x), var(--offset-y)) scale(1) rotate(0deg); opacity: 1; }
       }
       .animate-bounce-in { animation: bounceInOffset 0.5s forwards; }
+      .typing-indicator {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(148,163,184,1);
+  opacity: 0.3;
+  animation: typing-bounce 1s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
     </style>
   </head>
   <body class="antialiased text-gray-200 font-sans">
@@ -714,38 +741,83 @@
       if (e.key === 'Escape') hidePopup();
     }, { passive: true });
 
-    // message sending
-    async function sendMessage() {
-      const question = input.value.trim();
-      if (!question) return;
-      const userMsg = document.createElement('div');
-      userMsg.className = "bg-white/10 p-2 rounded-md text-right";
-      userMsg.textContent = question;
-      messages.appendChild(userMsg);
-      messages.scrollTop = messages.scrollHeight;
-      input.value = "";
+    // message sending// message sending with typing animation
+async function sendMessage() {
+  const question = input.value.trim();
+  if (!question) return;
 
-      try {
-        const response = await fetch('https://chatbot-production-e54b.up.railway.app/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question, session_id: 'user1' })
-        });
-        const data = await response.json();
-        const bot = document.createElement('div');
-        bot.className = "bg-white/5 p-2 rounded-md";
-        bot.textContent = data?.answer ?? 'Oops, no response';
-        messages.appendChild(bot);
-        messages.scrollTop = messages.scrollHeight;
-      } catch (err) {
-        console.error('Chat send error:', err);
-        const errorMsg = document.createElement('div');
-        errorMsg.className = "bg-red-600/20 p-2 rounded-md text-red-300";
-        errorMsg.textContent = "Error connecting to server.";
-        messages.appendChild(errorMsg);
-        messages.scrollTop = messages.scrollHeight;
-      }
-    }
+  // user bubble
+  const userMsg = document.createElement('div');
+  userMsg.className = "bg-white/10 p-2 rounded-md text-right";
+  userMsg.textContent = question;
+  messages.appendChild(userMsg);
+  messages.scrollTop = messages.scrollHeight;
+  input.value = "";
+
+  // bot "typing..." bubble
+  const typingMsg = document.createElement('div');
+  typingMsg.className = "bg-white/5 p-2 rounded-md flex items-center gap-2";
+  const typingLabel = document.createElement('span');
+  typingLabel.className = "text-sm text-gray-300";
+  typingLabel.textContent = "typing";
+  const dots = document.createElement('div');
+  dots.className = "typing-indicator";
+  dots.innerHTML = `
+    <span class="typing-dot"></span>
+    <span class="typing-dot"></span>
+    <span class="typing-dot"></span>
+  `;
+  typingMsg.appendChild(typingLabel);
+  typingMsg.appendChild(dots);
+  messages.appendChild(typingMsg);
+  messages.scrollTop = messages.scrollHeight;
+
+  // typewriter for bot reply
+  function typeText(el, text, speed = 18) {
+    let i = 0;
+    const len = text.length;
+    const timer = setInterval(() => {
+      el.textContent += text.charAt(i);
+      i++;
+      messages.scrollTop = messages.scrollHeight; // keep scroll at bottom
+      if (i >= len) clearInterval(timer);
+    }, speed);
+  }
+
+  try {
+    const response = await fetch('https://chatbot-production-e54b.up.railway.app/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, session_id: 'user1' })
+    });
+
+    const data = await response.json();
+    const botText = data?.answer ?? 'Oops, no response';
+
+    // remove typing bubble
+    typingMsg.remove();
+
+    // actual bot bubble with typing animation
+    const bot = document.createElement('div');
+    bot.className = "bg-white/5 p-2 rounded-md text-base";
+    const botContent = document.createElement('span');
+    bot.appendChild(botContent);
+    messages.appendChild(bot);
+    messages.scrollTop = messages.scrollHeight;
+
+    typeText(botContent, botText);
+
+  } catch (err) {
+    console.error('Chat send error:', err);
+    typingMsg.remove();
+
+    const errorMsg = document.createElement('div');
+    errorMsg.className = "bg-red-600/20 p-2 rounded-md text-red-300";
+    errorMsg.textContent = "Error connecting to server.";
+    messages.appendChild(errorMsg);
+    messages.scrollTop = messages.scrollHeight;
+  }
+}
 
     sendBtn.addEventListener('click', sendMessage);
     input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
